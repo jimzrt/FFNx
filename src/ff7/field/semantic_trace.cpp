@@ -15,6 +15,7 @@
 #include "../../ff7.h"
 #include "../../log.h"
 #include "../../common.h"
+#include "../../patch.h"
 #include "opcode.h"
 
 #include <array>
@@ -33,6 +34,43 @@ namespace ff7::field
         FILE* semantic_trace_file = nullptr;
         uint64_t semantic_trace_sequence = 0;
         bool semantic_trace_installed = false;
+
+        int semantic_dispatch_opcode()
+        {
+            const auto entity = ff7_externals.current_entity_id == nullptr
+                ? 0U
+                : static_cast<unsigned int>(*ff7_externals.current_entity_id);
+            const auto ip_before = ff7_externals.field_curr_script_position == nullptr
+                ? 0U
+                : static_cast<unsigned int>(ff7_externals.field_curr_script_position[entity]);
+            const auto* script = ff7_externals.field_script_ptr == nullptr
+                ? nullptr
+                : *ff7_externals.field_script_ptr;
+            const auto opcode = script == nullptr ? 0U : script[ip_before];
+            const auto script_priority = ff7_externals.current_entity_script_priority == nullptr
+                ? 0U
+                : static_cast<unsigned int>(ff7_externals.current_entity_script_priority[entity]);
+            const auto script_id = ff7_externals.current_entity_script_id == nullptr
+                ? 0U
+                : static_cast<unsigned int>(
+                    ff7_externals.current_entity_script_id[8 * entity + script_priority]);
+            const auto field_id = common_externals.current_field_id == nullptr
+                ? 0U
+                : static_cast<unsigned int>(*common_externals.current_field_id);
+            const auto result =
+                ((OpcodeFunction)common_externals.execute_opcode_table[opcode])();
+            const auto ip_after = ff7_externals.field_curr_script_position == nullptr
+                ? 0U
+                : static_cast<unsigned int>(ff7_externals.field_curr_script_position[entity]);
+            const auto sequence = semantic_trace_sequence++;
+            std::fprintf(
+                semantic_trace_file,
+                "{\"type\":\"dispatch\",\"sequence\":%llu,\"field_id\":%u,\"entity\":%u,\"script_priority\":%u,\"script_id\":%u,\"ip_before\":%u,\"opcode\":%u,\"ip_after\":%u,\"result\":%d}\n",
+                static_cast<unsigned long long>(sequence), field_id, entity,
+                script_priority, script_id, ip_before, opcode, ip_after, result);
+            std::fflush(semantic_trace_file);
+            return result;
+        }
 
         template <std::size_t Opcode>
         int semantic_opcode_wrapper()
@@ -134,11 +172,17 @@ namespace ff7::field
                     common_externals.execute_opcode_table,
                     sizeof(original_semantic_opcode_table));
         std::fprintf(semantic_trace_file,
-                     "{\"type\":\"trace_start\",\"format\":1,\"opcode_count\":%u}\n",
+                     "{\"type\":\"trace_start\",\"format\":2,\"opcode_count\":%u}\n",
                      static_cast<unsigned int>(OPCODE_COUNT));
         std::memcpy(common_externals.execute_opcode_table,
                     semantic_wrapper_table.data(),
                     sizeof(semantic_wrapper_table));
+        // FF7 1.02's dispatcher calls the opcode table at execute_opcode + 0x10A.
+        // The hook records the IP after the opcode returns, before the dispatcher
+        // applies its result-dependent IP advance.
+        replace_call_function(
+            ff7_externals.execute_opcode + 0x10A,
+            reinterpret_cast<void*>(&semantic_dispatch_opcode));
         std::fflush(semantic_trace_file);
         semantic_trace_installed = true;
         ffnx_info("Semantic field trace enabled: %s\n", trace_semantic_path.c_str());
