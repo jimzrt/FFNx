@@ -102,6 +102,8 @@ extern bool trace_loaders;
 extern bool trace_vram;
 extern bool trace_lights;
 extern bool trace_opcodes;
+extern bool trace_semantic;
+extern std::string trace_semantic_path;
 extern bool trace_voice;
 extern bool trace_ambient;
 extern bool trace_gamepad;

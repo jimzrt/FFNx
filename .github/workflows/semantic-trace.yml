@@ -1,0 +1,81 @@
+name: FFNx semantic trace
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 1440
+    steps:
+      - name: Configure Git
+        shell: pwsh
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.filemode false
+          git config --global core.longpaths true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Load x86 Visual Studio environment
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vcPath = & $vswhere -prerelease -latest -property InstallationPath
+          if ([string]::IsNullOrWhiteSpace($vcPath)) {
+            throw "Visual Studio installation not found"
+          }
+          cmd.exe /c "call `"$vcPath\VC\Auxiliary\Build\vcvarsall.bat`" x86 && set > %TEMP%\ffnx-vcvars.txt"
+          Get-Content "$env:TEMP\ffnx-vcvars.txt" | ForEach-Object {
+            if ($_ -match "^(.*?)=(.*)$") {
+              Set-Content "env:\$($matches[1])" $matches[2]
+            }
+          }
+
+      - name: Bootstrap vcpkg
+        shell: pwsh
+        env:
+          VCPKG_BINARY_SOURCES: clear;default,readwrite
+        run: |
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg.exe integrate install
+
+      - name: Configure and build x86 RelWithDebInfo DLL
+        shell: pwsh
+        env:
+          VCPKG_BINARY_SOURCES: clear;default,readwrite
+        run: |
+          cmake --preset RelWithDebInfo -D_DLL_VERSION="semantic-${{ github.run_number }}"
+          cmake --build --preset RelWithDebInfo --parallel 2
+
+      - name: Collect semantic trace artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifact | Out-Null
+          Copy-Item .build\bin\FFNx.dll artifact\FFNx.dll
+          if (Test-Path .build\bin\FFNx.pdb) {
+            Copy-Item .build\bin\FFNx.pdb artifact\FFNx.pdb
+          }
+          Copy-Item misc\FFNx.toml artifact\FFNx.toml.example
+          @"
+          commit=${{ github.sha }}
+          run=${{ github.run_id }}
+          configuration=RelWithDebInfo
+          architecture=x86
+          trace_config=trace_semantic=true; trace_semantic_path=ff7-semantic-trace.jsonl
+          "@ | Set-Content artifact\BUILD-MANIFEST.txt
+
+      - name: Upload semantic trace DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: FFNx-semantic-trace-${{ github.sha }}
+          path: artifact\*
+          if-no-files-found: error
+          retention-days: 30

@@ -37,6 +37,7 @@
 #include "defs.h"
 #include "enter.h"
 #include "model.h"
+#include "semantic_trace.h"
 
 namespace ff7::field
 {
@@ -367,5 +368,6 @@ namespace ff7::field
 
         // Fix FF7 2026 rerelease crash after battle
         patch_code_dword((uint32_t)&common_externals.execute_opcode_table[VISI], (DWORD)&opcode_script_VISI);
+        semantic_trace_install();
     }
 }

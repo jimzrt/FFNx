@@ -72,6 +72,8 @@ bool trace_loaders;
 bool trace_vram;
 bool trace_lights;
 bool trace_opcodes;
+bool trace_semantic;
+std::string trace_semantic_path;
 bool trace_voice;
 bool trace_ambient;
 bool trace_gamepad;
@@ -244,6 +246,8 @@ void read_cfg()
 	trace_vram = config["trace_vram"].value_or(false);
 	trace_lights = config["trace_lights"].value_or(false);
 	trace_opcodes = config["trace_opcodes"].value_or(false);
+	trace_semantic = config["trace_semantic"].value_or(false);
+	trace_semantic_path = config["trace_semantic_path"].value_or("ff7-semantic-trace.jsonl");
 	trace_voice = config["trace_voice"].value_or(false);
 	trace_ambient = config["trace_ambient"].value_or(false);
 	trace_gamepad = config["trace_gamepad"].value_or(false);

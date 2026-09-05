@@ -675,6 +675,12 @@ trace_vram = false
 
 # trace_opcodes - Dump in the logs only APIs that has to do with field opcodes
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# trace_semantic - Emit one JSONL record per field opcode plus post-opcode entity state.
+# The file path is relative to the game working directory.
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~
+trace_semantic = false
+trace_semantic_path = "ff7-semantic-trace.jsonl"
 trace_opcodes = false
 
 # trace_voice - Dump in the logs only APIs that has to do with voice playback
