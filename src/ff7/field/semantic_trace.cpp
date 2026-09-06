@@ -130,11 +130,12 @@ namespace ff7::field
                     const auto& state = (*ff7_externals.field_event_data_ptr)[model_id];
                     std::fprintf(
                         semantic_trace_file,
-                        "{\"type\":\"entity_state\",\"sequence\":%llu,\"field_id\":%u,\"entity\":%u,\"model\":%u,\"x\":%d,\"y\":%d,\"z\":%d,\"direction\":%d,\"triangle\":%d,\"character\":%d,\"animation\":%d}\n",
+                        "{\"type\":\"entity_state\",\"sequence\":%llu,\"field_id\":%u,\"entity\":%u,\"model\":%u,\"x\":%d,\"y\":%d,\"z\":%d,\"direction\":%d,\"direction_current\":%d,\"direction_initial\":%d,\"rotation_steps_type\":%d,\"triangle\":%d,\"character\":%d,\"animation\":%d}\n",
                         static_cast<unsigned long long>(sequence), field_id, entity, model_id,
                         state.model_pos.x, state.model_pos.y, state.model_pos.z,
-                        state.rotation_curr_value, state.field_triangle_id,
-                        state.character_id, state.animation_id);
+                        state.rotation_final, state.rotation_curr_value,
+                        state.rotation_initial, state.rotation_steps_type,
+                        state.field_triangle_id, state.character_id, state.animation_id);
                 }
             }
             std::fflush(semantic_trace_file);
