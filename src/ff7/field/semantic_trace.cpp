@@ -133,7 +133,7 @@ namespace ff7::field
                         "{\"type\":\"entity_state\",\"sequence\":%llu,\"field_id\":%u,\"entity\":%u,\"model\":%u,\"x\":%d,\"y\":%d,\"z\":%d,\"direction\":%d,\"triangle\":%d,\"character\":%d,\"animation\":%d}\n",
                         static_cast<unsigned long long>(sequence), field_id, entity, model_id,
                         state.model_pos.x, state.model_pos.y, state.model_pos.z,
-                        state.field_direction_or_collision, state.field_triangle_id,
+                        state.rotation_curr_value, state.field_triangle_id,
                         state.character_id, state.animation_id);
                 }
             }
