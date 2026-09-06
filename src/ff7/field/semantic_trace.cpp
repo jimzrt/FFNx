@@ -63,6 +63,20 @@ namespace ff7::field
                 ? 0U
                 : static_cast<unsigned int>(ff7_externals.field_curr_script_position[entity]);
             const auto sequence = semantic_trace_sequence++;
+            if (ff7_externals.field_camera_data != nullptr &&
+                *ff7_externals.field_camera_data != nullptr)
+            {
+                const auto& camera = **ff7_externals.field_camera_data;
+                std::fprintf(
+                    semantic_trace_file,
+                    "{\"type\":\"camera_state\",\"sequence\":%llu,\"field_id\":%u,\"eye_x\":%d,\"eye_y\":%d,\"eye_z\":%d,\"target_x\":%d,\"target_y\":%d,\"target_z\":%d,\"up_x\":%d,\"up_y\":%d,\"up_z\":%d,\"position_x\":%d,\"position_y\":%d,\"position_z\":%d,\"pan_x\":%d,\"pan_y\":%d,\"zoom\":%d}\n",
+                    static_cast<unsigned long long>(sequence), field_id,
+                    camera.eye.x, camera.eye.y, camera.eye.z,
+                    camera.target.x, camera.target.y, camera.target.z,
+                    camera.up.x, camera.up.y, camera.up.z,
+                    camera.position.x, camera.position.y, camera.position.z,
+                    camera.pan_x, camera.pan_y, camera.zoom);
+            }
             std::fprintf(
                 semantic_trace_file,
                 "{\"type\":\"dispatch\",\"sequence\":%llu,\"field_id\":%u,\"entity\":%u,\"script_priority\":%u,\"script_id\":%u,\"ip_before\":%u,\"opcode\":%u,\"ip_after\":%u,\"result\":%d}\n",
