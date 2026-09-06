@@ -178,11 +178,15 @@ namespace ff7::field
                     semantic_wrapper_table.data(),
                     sizeof(semantic_wrapper_table));
         // FF7 1.02's dispatcher calls the opcode table at execute_opcode + 0x10A.
-        // The hook records the IP after the opcode returns, before the dispatcher
-        // applies its result-dependent IP advance.
-        replace_call_function(
-            ff7_externals.execute_opcode + 0x10A,
-            reinterpret_cast<void*>(&semantic_dispatch_opcode));
+        // The original call is FF 14 8D disp32 (7 bytes), so the generic
+        // five-byte helper would leave a corrupt tail instruction.
+        const auto dispatch_call_site = ff7_externals.execute_opcode + 0x10A;
+        const auto dispatch_target =
+            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&semantic_dispatch_opcode));
+        const auto dispatch_relative = dispatch_target - (dispatch_call_site + 5);
+        uint8_t dispatch_patch[7] = {0xE8, 0, 0, 0, 0, 0x90, 0x90};
+        std::memcpy(&dispatch_patch[1], &dispatch_relative, sizeof(dispatch_relative));
+        memcpy_code(dispatch_call_site, dispatch_patch, sizeof(dispatch_patch));
         std::fflush(semantic_trace_file);
         semantic_trace_installed = true;
         ffnx_info("Semantic field trace enabled: %s\n", trace_semantic_path.c_str());
