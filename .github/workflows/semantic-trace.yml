@@ -25,8 +25,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 1
-
       - name: Restore vcpkg and CMake caches
         uses: actions/cache@v4
         with:
