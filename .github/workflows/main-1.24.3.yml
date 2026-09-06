@@ -28,6 +28,9 @@ env:
 
 jobs:
   FFNx:
+    # This release workflow publishes upstream packages and requires the
+    # julianxhokaxhiu NuGet registry. Forks use the manual semantic-trace build.
+    if: github.repository == 'julianxhokaxhiu/FFNx'
     runs-on: windows-2025-vs2026
     timeout-minutes: 1440
     strategy:

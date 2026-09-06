@@ -3,6 +3,10 @@ name: FFNx semantic trace
 on:
   workflow_dispatch:
 
+concurrency:
+  group: semantic-trace-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -21,8 +25,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-          fetch-depth: 0
+          fetch-depth: 1
+
+      - name: Restore vcpkg and CMake caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            vcpkg-cache
+            vcpkg/downloads
+            .build
+          key: ffnx-semantic-${{ runner.os }}-x86-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            ffnx-semantic-${{ runner.os }}-x86-${{ github.ref_name }}-
+            ffnx-semantic-${{ runner.os }}-x86-
 
       - name: Load x86 Visual Studio environment
         shell: pwsh
@@ -42,7 +57,8 @@ jobs:
       - name: Bootstrap vcpkg
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: clear;default,readwrite
+          VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-cache,readwrite
+          VCPKG_MAX_CONCURRENCY: 8
         run: |
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg.exe integrate install
@@ -50,10 +66,11 @@ jobs:
       - name: Configure and build x86 RelWithDebInfo DLL
         shell: pwsh
         env:
-          VCPKG_BINARY_SOURCES: clear;default,readwrite
+          VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-cache,readwrite
+          VCPKG_MAX_CONCURRENCY: 8
         run: |
           cmake --preset RelWithDebInfo -D_DLL_VERSION="semantic-${{ github.run_number }}"
-          cmake --build --preset RelWithDebInfo --parallel 2
+          cmake --build --preset RelWithDebInfo --parallel 4
 
       - name: Collect semantic trace artifact
         shell: pwsh
